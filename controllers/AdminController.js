@@ -21,38 +21,33 @@ class AdminController {
     }
   }
 
-  // POST /api/admin/login
   static async login(req, res) {
     try {
-        // console.log(req.body)
       const { email, password } = req.body;
       const admin = await Admin.findOne({ email });
       if (!admin) return res.status(404).json({ message: 'Admin not found' });
-
+  
       const isMatch = await admin.comparePassword(password);
-      console.log(isMatch)
       if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
-
-      // ✅ Generate JWT token
+  
       const token = jwt.sign({ id: admin._id }, process.env.JWT_SECRET, {
         expiresIn: '1d',
       });
-      console.log(token)
-
-      // ✅ Set as HTTP-Only cookie
+  
       res.cookie('adminToken', token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 24 * 60 * 60 * 1000, // 1 day
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        maxAge: 24 * 60 * 60 * 1000,
       });
-
+  
       res.status(200).json({ message: 'Login successful' });
     } catch (err) {
-      console.log(err)
+      console.log(err);
       res.status(500).json({ message: 'Server Error', error: err.message });
     }
   }
+  
 
   // GET /api/admin/dashboard (Protected)
   static async dashboard(req, res) {
