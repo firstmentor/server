@@ -1,12 +1,14 @@
 const Admin = require('../models/Admin');
 const jwt = require('jsonwebtoken');
-// console.log(process.env.JWT_SECRET)
+require('dotenv').config();
+console.log('JWT_SECRET:', process.env.JWT_SECRET);
+
 
 class AdminController {
   // POST /api/admin/register
   static async register(req, res) {
     try {
-        console.log(req.body)
+        // console.log(req.body)
       const { name, email, password } = req.body;
 
       const exist = await Admin.findOne({ email });
