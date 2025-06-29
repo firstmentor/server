@@ -1,57 +1,63 @@
 const express = require('express');
 const app = express();
-const port = 3000;
+const dotenv = require('dotenv');
 const connectDB = require('./db/connectDB');
 const web = require('./routes/web');
 const cors = require('cors');
-const cookieParser = require('cookie-parser')
+const cookieParser = require('cookie-parser');
 const path = require('path');
 const fs = require('fs');
-const dotenv = require('dotenv')
-const serverless = require('serverless-http');
 const cron = require('node-cron');
 const deleteOldFiles = require('./utils/deleteOldFiles');
+const serverless = require('serverless-http');
 
-// Run every day at midnight
-cron.schedule('0 0 * * *', () => {
-  console.log('🕛 Running daily file cleanup...');
-  deleteOldFiles();
-});
+dotenv.config();
 
-
-
-
-dotenv.config({});
 const PORT = process.env.PORT || 3000;
 
+// ✅ Connect DB
+connectDB();
 
-
-
-//token get
-app.use(cookieParser())
+// ✅ CORS: allow both localhost and live domain
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://srwebconsultancy.in'
+];
 
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile, Postman, etc.)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error('❌ Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 
+// ✅ Middleware
 app.use(express.json());
+app.use(cookieParser());
 
-connectDB();
-
-
-
-// Uploads folder (optional)
-// 👇 This line serves the /uploads folder publicly
+// ✅ Serve static /uploads files for PDF preview
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// ✅ Routes
 app.use('/api', web);
 
+// ✅ Daily file cleanup via cron
+cron.schedule('0 0 * * *', () => {
+  console.log('🧹 Running daily file cleanup...');
+  deleteOldFiles();
+});
 
+// ✅ Start server (for local use)
 app.listen(PORT, () => {
-  console.log(`server is listening on localhost: ${PORT}`)
-})
+  console.log(`🚀 Server is running on http://localhost:${PORT}`);
+});
 
-
-// Export for Vercel
+// ✅ Export for Vercel/Serverless
 module.exports = app;
 module.exports.handler = serverless(app);
