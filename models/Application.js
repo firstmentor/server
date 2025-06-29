@@ -6,6 +6,15 @@ const applicationSchema = new mongoose.Schema({
   phone: String,
   designation: String,
   resumeUrl: String,
+  status:{
+    type:String,
+    default:"panding"
+  },
+  comment:{
+    type:String,
+    default:"panding"
+  },
+
   createdAt: {
     type: Date,
     default: Date.now,

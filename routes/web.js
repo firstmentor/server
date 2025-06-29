@@ -27,6 +27,10 @@ route.get("/getCourse",isAuthenticated, CourseController.getCreatorCourses);
 //job
 route.post('/apply', upload.single('resume'), JobApplicationController.apply);
 route.get('/allJob', JobApplicationController.getAllApplications);
+route.put('/application/:id/status', JobApplicationController.updateStatus);
+route.delete('/application/:id', JobApplicationController.delete);
+
+
 
 
 

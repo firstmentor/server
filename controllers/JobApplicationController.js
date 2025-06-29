@@ -1,6 +1,10 @@
 const Application = require('../models/Application');
 const path = require('path');
+const sendEmail =require('../utils/sendEmail')
 const sendEmailWithAttachment = require('../utils/mailer');
+const { generateStatusUpdateEmail } = require('../utils/emailTemplates');
+const fs = require('fs');
+
 
 class JobApplicationController {
   static async apply(req, res) {
@@ -71,14 +75,73 @@ class JobApplicationController {
       res.status(500).json({ success: false, message: 'Server error' });
     }
   }
+
   static async getAllApplications(req, res) {
     try {
       const applications = await Application.find().sort({ createdAt: -1 });
-      console.log(applications)
+      // console.log(applications)
       res.status(200).json({ success: true, data: applications });
     } catch (error) {
       console.error('Error in getAllApplications:', error);
       res.status(500).json({ success: false, message: 'Server Error' });
+    }
+  }
+
+  static async updateStatus(req, res) {
+    try {
+      const { id } = req.params;
+      const { status, comment } = req.body;
+
+      const updatedApp = await Application.findByIdAndUpdate(
+        id,
+        { status, comment },
+        { new: true }
+      );
+
+      if (!updatedApp) {
+        return res.status(404).json({ success: false, message: 'Application not found' });
+      }
+
+      // Optional: send email logic here...
+
+      res.status(200).json({
+        success: true,
+        message: 'Status updated',
+        data: updatedApp,
+      });
+    } catch (error) {
+      console.error('Update error:', error);
+      res.status(500).json({ success: false, message: 'Server error' });
+    }
+  }
+
+  static async delete(req, res) {
+    try {
+      const { id } = req.params;
+      const app = await Application.findById(id);
+      if (!app) {
+        return res.status(404).json({ success: false, message: 'Application not found' });
+      }
+
+      // ⛔ Delete local resume file (if it exists)
+      if (app.resumeUrl && app.resumeUrl.startsWith('/uploads/')) {
+        const filePath = path.join(__dirname, '..', app.resumeUrl);
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+          console.log(`🧹 Deleted local file: ${filePath}`);
+        }
+      }
+
+      // ❌ Delete document from DB
+      await app.deleteOne();
+
+      return res.status(200).json({
+        success: true,
+        message: 'Application & resume deleted successfully',
+      });
+    } catch (error) {
+      console.error('❌ Error deleting application:', error);
+      res.status(500).json({ success: false, message: 'Server error' });
     }
   }
 }
