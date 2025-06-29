@@ -103,6 +103,14 @@ class JobApplicationController {
       }
 
       // Optional: send email logic here...
+      const htmlTemplate = generateStatusUpdateEmail(
+        updatedApp.name,
+        status,
+        comment,
+        `${process.env.BASE_URL}${updatedApp.resumeUrl}` // localhost or live
+      );
+
+      await sendEmail(updatedApp.email, '📢 Application Status Updated', htmlTemplate);
 
       res.status(200).json({
         success: true,
