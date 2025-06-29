@@ -7,20 +7,13 @@ const JobApplicationController = require('../controllers/JobApplicationControlle
 const upload1 = require('../middleware/multer');
 const upload = require('../middleware/upload');
 
+const AdminController = require('../controllers/AdminController');
+const verifyAdmin = require('../middleware/verifyAdmin.js');
 
-
-
-route.post("/register", UserController.register);
-route.post("/login", UserController.login);
-route.get("/logout", UserController.logOut);
-route.get("/profile",isAuthenticated, UserController.getUserProfile);
-route.put("/profile/update",isAuthenticated, upload1.single("profilePhoto"), UserController.updateProfile);
-
-
-//courseController
-route.post("/createCourse",isAuthenticated, CourseController.createCourse);
-route.get("/getCourse",isAuthenticated, CourseController.getCreatorCourses);
-
+route.post('/admin/register', AdminController.register);
+route.post('/admin/login', AdminController.login);
+route.get('/admin/dashboard', verifyAdmin, AdminController.dashboard);
+route.post('/admin/logout', AdminController.logout);
 
 
 
