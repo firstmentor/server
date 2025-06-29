@@ -56,7 +56,15 @@ class AdminController {
 
   // POST /api/admin/logout
   static async logout(req, res) {
-    res.clearCookie('adminToken');
+    // console.log("hello");
+  
+    res.clearCookie('adminToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      path: '/', // ✅ यह देना ज़रूरी है
+    });
+  
     res.status(200).json({ message: 'Logged out successfully' });
   }
 }
