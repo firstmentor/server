@@ -9,12 +9,30 @@ const upload = require('../middleware/upload');
 
 const AdminController = require('../controllers/AdminController');
 const verifyAdmin = require('../middleware/verifyAdmin.js');
+const StatsController = require("../controllers/StatsController.js");
+const RequirementController = require("../controllers/RequirementController.js");
+const JobController = require("../controllers/JobController.js");
 
 route.post('/admin/register', AdminController.register);
 route.post('/admin/login', AdminController.login);
 route.get('/admin/dashboard', verifyAdmin, AdminController.dashboard);
 route.post('/admin/logout', AdminController.logout);
+route.get('/admin/profile', verifyAdmin, AdminController.profile);
+route.get('/admin/stats', verifyAdmin, StatsController.getStats);
 
+
+
+//RequirementController
+route.post('/requirement', RequirementController.submit);
+route.get('/allrequirement',RequirementController.getAll);
+route.delete('/deleterequirement/:id', RequirementController.delete);
+
+
+//JobController
+route.post('/addjob', JobController.addJob);
+route.get('/jobs', JobController.getJobs);
+route.delete('/job/:id', JobController.deleteJob);     // ✅ Delete API
+route.put('/job/:id', JobController.updateJob);  
 
 
 //job
