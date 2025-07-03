@@ -1,154 +1,140 @@
 const Application = require('../models/Application');
-const path = require('path');
-const sendEmail =require('../utils/sendEmail')
-const sendEmailWithAttachment = require('../utils/mailer');
+const cloudinary = require('../config/cloudinary');
+const sendEmail = require('../utils/sendEmail');
 const { generateStatusUpdateEmail } = require('../utils/emailTemplates');
-const fs = require('fs');
-
 
 class JobApplicationController {
+  // ✅ CREATE (Apply with resume)
   static async apply(req, res) {
     try {
       const { name, email, phone, designation } = req.body;
-      const resumeFile = req.file;
 
-      const resumePath = path.join(__dirname, '..', 'uploads', resumeFile.filename);
-      const resumeUrl = `/uploads/${resumeFile.filename}`;
+      if (!req.files || !req.files.resume) {
+        return res.status(400).json({ success: false, message: 'Resume is required' });
+      }
 
-      // Save in DB
-      const application = new Application({
+      const file = req.files.resume;
+
+      // ✅ Upload to Cloudinary
+      const result = await cloudinary.uploader.upload(file.tempFilePath, {
+        resource_type: 'raw',
+        folder: 'resumes',
+        public_id: `${name.replace(/\s+/g, '_')}_${Date.now()}`
+      });
+
+      const resumeUrl = result.secure_url;
+      const cloudinary_id = result.public_id;
+
+      // ✅ Save in DB
+      const application = await Application.create({
         name,
         email,
         phone,
         designation,
         resumeUrl,
+        cloudinary_id
       });
-      await application.save();
 
-      // ✅ Stylish HTML Email Template
-      const htmlContent = `
-        <div style="font-family:sans-serif; padding:20px;">
-          <h2 style="color:#2e6c80;">SR Web Consultancy Services Job Application</h2>
-          <p>Dear <strong>${name}</strong>,</p>
-          <p>Thank you for applying for the job. Your application details are:</p>
-          <ul>
-            <li><b>Email:</b> ${email}</li>
-            <li><b>Phone:</b> ${phone}</li>
-            <li><b>Designation:</b> ${designation}</li>
-          </ul>
-          <p>Attached is your uploaded resume.</p>
-          <p>Regards,<br/>SR Web Consultancy Services Team</p>
-        </div>
+      // ✅ Email content
+      const html = `
+        <h3>New Job Application</h3>
+        <ul>
+          <li>Name: ${name}</li>
+          <li>Email: ${email}</li>
+          <li>Phone: ${phone}</li>
+          <li>Designation: ${designation}</li>
+          <li>Resume: <a href="${resumeUrl}" target="_blank">View PDF</a></li>
+        </ul>
       `;
 
-      const attachment = [
-        {
-          filename: resumeFile.originalname,
-          path: resumePath,
-          contentType: 'application/pdf',
-        },
-      ];
+      // ✅ Email to user and admin
+      await sendEmail(email, '✅ Application Received', html);
+      await sendEmail(process.env.ADMIN_EMAIL, `📥 Application from ${name}`, html);
 
-      // ✅ Send to USER
-      await sendEmailWithAttachment({
-        to: email,
-        subject: '✅ Your Application Received - SR Web Consultancy Services',
-        html: htmlContent,
-        attachments: attachment,
-      });
-
-      // ✅ Send to ADMIN
-      await sendEmailWithAttachment({
-        to: process.env.ADMIN_EMAIL,
-        subject: `📥 New Job Application from ${name}`,
-        html: htmlContent,
-        attachments: attachment,
-      });
-
-      res.status(201).json({
+      return res.status(201).json({
         success: true,
-        message: 'Application submitted and emails sent with PDF',
-        data: application,
+        message: 'Application submitted successfully',
+        data: application
       });
+
     } catch (error) {
-      console.error('Email Error:', error);
+      console.error('❌ Apply Error:', error);
       res.status(500).json({ success: false, message: 'Server error' });
     }
   }
 
-  static async getAllApplications(req, res) {
+  // ✅ READ all applications
+  static async getAll(req, res) {
     try {
-      const applications = await Application.find().sort({ createdAt: -1 });
-      // console.log(applications)
-      res.status(200).json({ success: true, data: applications });
+      const data = await Application.find().sort({ createdAt: -1 });
+      res.status(200).json({ success: true, data });
     } catch (error) {
-      console.error('Error in getAllApplications:', error);
-      res.status(500).json({ success: false, message: 'Server Error' });
+      res.status(500).json({ success: false, message: 'Server error' });
     }
   }
 
+  // ✅ UPDATE status/comment
   static async updateStatus(req, res) {
     try {
       const { id } = req.params;
       const { status, comment } = req.body;
 
-      const updatedApp = await Application.findByIdAndUpdate(
+      const application = await Application.findByIdAndUpdate(
         id,
         { status, comment },
         { new: true }
       );
 
-      if (!updatedApp) {
+      if (!application) {
         return res.status(404).json({ success: false, message: 'Application not found' });
       }
 
-      // Optional: send email logic here...
-      const htmlTemplate = generateStatusUpdateEmail(
-        updatedApp.name,
+      const html = generateStatusUpdateEmail(
+        application.name,
         status,
         comment,
-        `${process.env.BASE_URL}${updatedApp.resumeUrl}` // localhost or live
+        application.resumeUrl
       );
 
-      await sendEmail(updatedApp.email, '📢 Application Status Updated', htmlTemplate);
+      await sendEmail(application.email, '📢 Application Status Updated', html);
 
       res.status(200).json({
         success: true,
         message: 'Status updated',
-        data: updatedApp,
+        data: application
       });
+
     } catch (error) {
-      console.error('Update error:', error);
+      console.error('❌ Update Error:', error);
       res.status(500).json({ success: false, message: 'Server error' });
     }
   }
 
+  // ✅ DELETE application + resume from Cloudinary
   static async delete(req, res) {
     try {
       const { id } = req.params;
       const app = await Application.findById(id);
+
       if (!app) {
         return res.status(404).json({ success: false, message: 'Application not found' });
       }
 
-      // ⛔ Delete local resume file (if it exists)
-      if (app.resumeUrl && app.resumeUrl.startsWith('/uploads/')) {
-        const filePath = path.join(__dirname, '..', app.resumeUrl);
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
-          console.log(`🧹 Deleted local file: ${filePath}`);
-        }
+      // ✅ Delete from Cloudinary
+      if (app.cloudinary_id) {
+        await cloudinary.uploader.destroy(app.cloudinary_id, { resource_type: 'raw' });
       }
 
-      // ❌ Delete document from DB
+      // ✅ Delete from DB
       await app.deleteOne();
 
-      return res.status(200).json({
+      res.status(200).json({
         success: true,
-        message: 'Application & resume deleted successfully',
+        message: 'Application & resume deleted successfully'
       });
+
     } catch (error) {
-      console.error('❌ Error deleting application:', error);
+      console.error('❌ Delete Error:', error);
       res.status(500).json({ success: false, message: 'Server error' });
     }
   }

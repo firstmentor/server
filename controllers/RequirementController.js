@@ -5,7 +5,8 @@ class RequirementController {
 
   static async submit(req, res) {
     try {
-      const { name, email, phone, comment } = req.body;
+      const { name, email, phone, message,businessName } = req.body;
+      // console.log(req.body)
 
       // ✅ Check duplicate email
       const exist = await Requirement.findOne({ email });
@@ -14,7 +15,7 @@ class RequirementController {
       }
 
       // ✅ Save data to DB
-      const newRequirement = new Requirement({ name, email, phone, comment });
+      const newRequirement = new Requirement({ name, email, phone, message,businessName });
       await newRequirement.save();
 
       // ✅ Setup mail transporter
@@ -32,9 +33,10 @@ class RequirementController {
         to: process.env.ADMIN_EMAIL,
         subject: '📨 New Requirement Posted',
         html: `<p><strong>Name:</strong> ${name}</p>
+               <p><strong>BusinessName:</strong> ${businessName}</p>
                <p><strong>Email:</strong> ${email}</p>
                <p><strong>Phone:</strong> ${phone}</p>
-               <p><strong>Comment:</strong> ${comment}</p>`,
+               <p><strong>Comment:</strong> ${message}</p>`,
       };
 
       // ✅ User confirmation email

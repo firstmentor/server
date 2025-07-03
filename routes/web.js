@@ -12,6 +12,8 @@ const verifyAdmin = require('../middleware/verifyAdmin.js');
 const StatsController = require("../controllers/StatsController.js");
 const RequirementController = require("../controllers/RequirementController.js");
 const JobController = require("../controllers/JobController.js");
+const ProductController = require("../controllers/productController.js");
+const CategoryController = require("../controllers/CategoryController.js");
 
 route.post('/admin/register', AdminController.register);
 route.post('/admin/login', AdminController.login);
@@ -36,10 +38,23 @@ route.put('/job/:id', JobController.updateJob);
 
 
 //job
-route.post('/apply', upload.single('resume'), JobApplicationController.apply);
-route.get('/allJob', JobApplicationController.getAllApplications);
+route.post('/apply',  JobApplicationController.apply);
+route.get('/allJob', JobApplicationController.getAll);
 route.put('/application/:id/status', JobApplicationController.updateStatus);
 route.delete('/application/:id', JobApplicationController.delete);
+
+
+route.get("/category", CategoryController.getAll);
+route.post("/createCategory", CategoryController.create);
+route.put("/categoryUpdate/:id", CategoryController.update);
+route.delete("/categoryDelete/:id", CategoryController.delete);
+
+
+
+
+
+route.post('/upload', ProductController.create);
+
 
 
 

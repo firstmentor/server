@@ -11,9 +11,18 @@ const cron = require('node-cron');
 const deleteOldFiles = require('./utils/deleteOldFiles');
 const serverless = require('serverless-http');
 
+
+
 dotenv.config();
 
 const PORT = process.env.PORT || 3000;
+
+const fileUpload = require('express-fileupload');
+app.use(fileUpload({
+  useTempFiles: true,
+  tempFileDir: path.join(__dirname, 'uploads')  // temp dir must exist
+}));
+
 
 // ✅ Connect DB
 connectDB();
@@ -47,11 +56,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // ✅ Routes
 app.use('/api', web);
 
-// ✅ Daily file cleanup via cron
-cron.schedule('0 0 * * *', () => {
-  console.log('🧹 Running daily file cleanup...');
-  deleteOldFiles();
-});
+
 
 // ✅ Start server (for local use)
 app.listen(PORT, () => {
