@@ -14,6 +14,7 @@ const RequirementController = require("../controllers/RequirementController.js")
 const JobController = require("../controllers/JobController.js");
 const ProductController = require("../controllers/productController.js");
 const CategoryController = require("../controllers/CategoryController.js");
+const ContactController = require("../controllers/contactController.js");
 
 route.post('/admin/register', AdminController.register);
 route.post('/admin/login', AdminController.login);
@@ -44,10 +45,21 @@ route.put('/application/:id/status', JobApplicationController.updateStatus);
 route.delete('/application/:id', JobApplicationController.delete);
 
 
+//CategoryController
 route.get("/category", CategoryController.getAll);
 route.post("/createCategory", CategoryController.create);
 route.put("/categoryUpdate/:id", CategoryController.update);
 route.delete("/categoryDelete/:id", CategoryController.delete);
+
+
+
+
+route.post('/contact', ContactController.create);
+route.get('/contact', ContactController.getAll);
+route.delete('/contact/:id', ContactController.delete);
+// ✅ Bulk Delete Route
+route.post('/contact/bulk-delete', ContactController.bulkDelete);
+
 
 
 
