@@ -22,6 +22,10 @@ route.get('/admin/dashboard', verifyAdmin, AdminController.dashboard);
 route.post('/admin/logout', AdminController.logout);
 route.get('/admin/profile', verifyAdmin, AdminController.profile);
 route.get('/admin/stats', verifyAdmin, StatsController.getStats);
+route.put("/admin/change-password", verifyAdmin, AdminController.changePassword);
+route.post("/admin/forgot-password", AdminController.forgotPassword);
+route.post("/admin/reset-password", AdminController.resetPassword);
+
 
 
 
