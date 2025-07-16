@@ -11,8 +11,6 @@ const cron = require('node-cron');
 const deleteOldFiles = require('./utils/deleteOldFiles');
 const serverless = require('serverless-http');
 
-
-
 dotenv.config();
 
 const PORT = process.env.PORT || 3000;
@@ -20,27 +18,36 @@ const PORT = process.env.PORT || 3000;
 const fileUpload = require('express-fileupload');
 app.use(fileUpload({
   useTempFiles: true,
-  tempFileDir: path.join(__dirname, 'uploads')  // temp dir must exist
+  tempFileDir: path.join(__dirname, 'uploads')  // temp dir hona chahiye
 }));
 
-
-// ✅ Connect DB
+// ✅ Database connect karo
 connectDB();
 
-// ✅ CORS: allow both localhost and live domain
+// ✅ CORS setup — frontend se request allow karne ke लिए
 const allowedOrigins = [
-  'http://localhost:5173',
-  'https://srwebconsultancy.in'
+  'http://localhost:5173',                // Localhost Vite app
+  'https://srwebconsultancy.in'          // Aapka live domain
 ];
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (mobile, Postman, etc.)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);              // ✅ origin allow hai
     } else {
-      return callback(new Error('❌ Not allowed by CORS'));
+      callback(new Error('❌ Not allowed by CORS'));  // ❌ Block
+    }
+  },
+  credentials: true
+}));
+
+// ✅ Preflight (OPTIONS) request handle karo
+app.options('*', cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('❌ Not allowed by CORS'));
     }
   },
   credentials: true
@@ -50,19 +57,17 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
-// ✅ Serve static /uploads files for PDF preview
+// ✅ Static folder (uploads folder ko public bana do PDF/image view ke liye)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ✅ Routes
 app.use('/api', web);
 
-
-
-// ✅ Start server (for local use)
+// ✅ Local server start karo
 app.listen(PORT, () => {
   console.log(`🚀 Server is running on http://localhost:${PORT}`);
 });
 
-// ✅ Export for Vercel/Serverless
+// ✅ Serverless ke liye export
 module.exports = app;
 module.exports.handler = serverless(app);

@@ -13,7 +13,8 @@ class CategoryController {
 
   static async create(req, res) {
     try {
-      const { title, jobsCount } = req.body;
+      // console.log(req.body)
+      const { title, jobsCount,description } = req.body;
 
       if (!req.files?.image) {
         return res.status(400).json({ success: false, message: "Image required" });
@@ -26,6 +27,7 @@ class CategoryController {
       const newCategory = await Category.create({
         title,
         jobsCount,
+        description,
         image: {
           public_id: result.public_id,
           url: result.secure_url,
@@ -41,7 +43,7 @@ class CategoryController {
   static async update(req, res) {
     try {
       const { id } = req.params;
-      const { title, jobsCount } = req.body;
+      const { title, jobsCount,description } = req.body;
 
       const existing = await Category.findById(id);
       if (!existing) return res.status(404).json({ message: "Not found" });
@@ -66,6 +68,7 @@ class CategoryController {
         {
           title,
           jobsCount,
+          description,
           image: updatedImage,
         },
         { new: true }
